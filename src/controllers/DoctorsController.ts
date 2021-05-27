@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { getRepository } from 'typeorm';
 import Doctor from '../models/Doctor';
 import doctorView from '../views/doctors_view';
+import * as Yup from 'yup';
 
 export default {
   async create(req: Request, res: Response) {
@@ -9,14 +10,33 @@ export default {
 
     const doctorRepository = getRepository(Doctor);
 
-    const doctor = doctorRepository.create({
+    const data = {
       name,
       crm,
       phone,
       cellphone,
       cep,
       specialities,
+    };
+
+    const schema = Yup.object().shape({
+      name: Yup.string().required().max(120),
+      crm: Yup.number().required(),
+      phone: Yup.number().required(),
+      cellphone: Yup.number().required(),
+      cep: Yup.number().required(),
+      specialities: Yup.array(
+        Yup.object().shape({
+          specialty: Yup.string().required(),
+        })
+      ),
     });
+
+    await schema.validate(data, {
+      abortEarly: false,
+    });
+
+    const doctor = doctorRepository.create(data);
 
     await doctorRepository.save(doctor);
 
